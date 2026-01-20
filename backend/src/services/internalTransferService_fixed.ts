@@ -445,9 +445,9 @@ export const internalTransferService = {
           break;
 
         case 'real_name_auth':
-          // OCR全部识别完成人数明细（完全参考汇总逻辑的子查询）
+          // OCR全部识别完成人数明细（完全参考汇总逻辑的子查询，关联用户登录表获取os_name）
           sql = `
-            SELECT ocr.*
+            SELECT ocr.*, ulr.os_name
             FROM (
               SELECT 
                 user_id,
@@ -460,6 +460,17 @@ export const internalTransferService = {
             INNER JOIN user_ocr_record ocr 
               ON ocr.user_id = first_completion.user_id 
               AND ocr.created_at = first_completion.created_at
+            LEFT JOIN (
+              SELECT ulr1.user_id, ulr1.os_name
+              FROM user_login_record ulr1
+              INNER JOIN (
+                SELECT user_id, MIN(request_time) AS first_login_time
+                FROM user_login_record
+                WHERE user_id IS NOT NULL
+                GROUP BY user_id
+              ) AS first_login ON first_login.user_id = ulr1.user_id 
+                AND first_login.first_login_time = ulr1.request_time
+            ) AS ulr ON ulr.user_id = ocr.user_id
             WHERE DATE(first_completion.created_at) = '${date}'
             ORDER BY first_completion.created_at DESC
             LIMIT 1000
@@ -467,21 +478,32 @@ export const internalTransferService = {
           break;
 
         case 'credit_info':
-          // 个人信息提交人数明细（完全参考汇总逻辑，返回所有字段）
+          // 个人信息提交人数明细（完全参考汇总逻辑，返回所有字段，关联用户登录表获取os_name）
           sql = `
-            SELECT *
-            FROM user_info 
-            WHERE verification_success_at IS NOT NULL
-              AND DATE(verification_success_at) = '${date}'
-            ORDER BY verification_success_at DESC
+            SELECT ui.*, ulr.os_name
+            FROM user_info ui
+            LEFT JOIN (
+              SELECT ulr1.user_id, ulr1.os_name
+              FROM user_login_record ulr1
+              INNER JOIN (
+                SELECT user_id, MIN(request_time) AS first_login_time
+                FROM user_login_record
+                WHERE user_id IS NOT NULL
+                GROUP BY user_id
+              ) AS first_login ON first_login.user_id = ulr1.user_id 
+                AND first_login.first_login_time = ulr1.request_time
+            ) AS ulr ON ulr.user_id = ui.user_id
+            WHERE ui.verification_success_at IS NOT NULL
+              AND DATE(ui.verification_success_at) = '${date}'
+            ORDER BY ui.verification_success_at DESC
             LIMIT 1000
           `;
           break;
 
         case 'push_total':
-          // 推送总人数明细（完全参考汇总逻辑的子查询）
+          // 推送总人数明细（完全参考汇总逻辑的子查询，关联用户登录表获取os_name）
           sql = `
-            SELECT upr.*
+            SELECT upr.*, ulr.os_name
             FROM (
               SELECT 
                 user_id,
@@ -492,6 +514,17 @@ export const internalTransferService = {
             INNER JOIN user_upload_records upr 
               ON upr.user_id = first_push.user_id 
               AND upr.created_at = first_push.created_at
+            LEFT JOIN (
+              SELECT ulr1.user_id, ulr1.os_name
+              FROM user_login_record ulr1
+              INNER JOIN (
+                SELECT user_id, MIN(request_time) AS first_login_time
+                FROM user_login_record
+                WHERE user_id IS NOT NULL
+                GROUP BY user_id
+              ) AS first_login ON first_login.user_id = ulr1.user_id 
+                AND first_login.first_login_time = ulr1.request_time
+            ) AS ulr ON ulr.user_id = upr.user_id
             WHERE DATE(first_push.created_at) = '${date}'
             ORDER BY first_push.created_at DESC
             LIMIT 1000
@@ -499,9 +532,9 @@ export const internalTransferService = {
           break;
 
         case 'info_push':
-          // 个人信息推送成功人数明细（完全参考汇总逻辑的子查询）
+          // 个人信息推送成功人数明细（完全参考汇总逻辑的子查询，关联用户登录表获取os_name）
           sql = `
-            SELECT upr.*
+            SELECT upr.*, ulr.os_name
             FROM (
               SELECT 
                 user_id,
@@ -513,6 +546,17 @@ export const internalTransferService = {
             INNER JOIN user_upload_records upr 
               ON upr.user_id = first_success.user_id 
               AND upr.created_at = first_success.created_at
+            LEFT JOIN (
+              SELECT ulr1.user_id, ulr1.os_name
+              FROM user_login_record ulr1
+              INNER JOIN (
+                SELECT user_id, MIN(request_time) AS first_login_time
+                FROM user_login_record
+                WHERE user_id IS NOT NULL
+                GROUP BY user_id
+              ) AS first_login ON first_login.user_id = ulr1.user_id 
+                AND first_login.first_login_time = ulr1.request_time
+            ) AS ulr ON ulr.user_id = upr.user_id
             WHERE DATE(first_success.created_at) = '${date}'
             ORDER BY first_success.created_at DESC
             LIMIT 1000
@@ -520,9 +564,9 @@ export const internalTransferService = {
           break;
 
         case 'credit_success':
-          // 授信成功人数明细（完全参考汇总逻辑的子查询）
+          // 授信成功人数明细（完全参考汇总逻辑的子查询，关联用户登录表获取os_name）
           sql = `
-            SELECT ucr.*
+            SELECT ucr.*, ulr.os_name
             FROM (
               SELECT
                 user_id,
@@ -534,6 +578,17 @@ export const internalTransferService = {
             INNER JOIN user_credit_record ucr 
               ON ucr.user_id = credit.user_id 
               AND ucr.created_at = credit.created_at
+            LEFT JOIN (
+              SELECT ulr1.user_id, ulr1.os_name
+              FROM user_login_record ulr1
+              INNER JOIN (
+                SELECT user_id, MIN(request_time) AS first_login_time
+                FROM user_login_record
+                WHERE user_id IS NOT NULL
+                GROUP BY user_id
+              ) AS first_login ON first_login.user_id = ulr1.user_id 
+                AND first_login.first_login_time = ulr1.request_time
+            ) AS ulr ON ulr.user_id = ucr.user_id
             WHERE DATE(credit.created_at) = '${date}'
             ORDER BY credit.created_at DESC
             LIMIT 1000
@@ -541,20 +596,31 @@ export const internalTransferService = {
           break;
 
         case 'loan_success':
-          // 提交贷款明细（完全参考汇总逻辑，返回所有字段）
+          // 提交贷款明细（完全参考汇总逻辑，返回所有字段，关联用户登录表获取os_name）
           sql = `
-            SELECT *
-            FROM user_loans
-            WHERE DATE(created_at) = '${date}'
-            ORDER BY created_at DESC
+            SELECT ul.*, ulr.os_name
+            FROM user_loans ul
+            LEFT JOIN (
+              SELECT ulr1.user_id, ulr1.os_name
+              FROM user_login_record ulr1
+              INNER JOIN (
+                SELECT user_id, MIN(request_time) AS first_login_time
+                FROM user_login_record
+                WHERE user_id IS NOT NULL
+                GROUP BY user_id
+              ) AS first_login ON first_login.user_id = ulr1.user_id 
+                AND first_login.first_login_time = ulr1.request_time
+            ) AS ulr ON ulr.user_id = ul.user_id
+            WHERE DATE(ul.created_at) = '${date}'
+            ORDER BY ul.created_at DESC
             LIMIT 1000
           `;
           break;
 
         case 'loan_approved':
-          // 借款成功明细（完全参考汇总逻辑的子查询）
+          // 借款成功明细（完全参考汇总逻辑的子查询，关联用户登录表获取os_name）
           sql = `
-            SELECT srp.*
+            SELECT srp.*, ulr.os_name
             FROM (
               SELECT
                 order_no,
@@ -566,6 +632,18 @@ export const internalTransferService = {
             INNER JOIN scheduled_repay_plan srp 
               ON srp.order_no = plan.order_no 
               AND srp.created_at = plan.created_at
+            LEFT JOIN user_loans ul ON ul.order_no = srp.order_no
+            LEFT JOIN (
+              SELECT ulr1.user_id, ulr1.os_name
+              FROM user_login_record ulr1
+              INNER JOIN (
+                SELECT user_id, MIN(request_time) AS first_login_time
+                FROM user_login_record
+                WHERE user_id IS NOT NULL
+                GROUP BY user_id
+              ) AS first_login ON first_login.user_id = ulr1.user_id 
+                AND first_login.first_login_time = ulr1.request_time
+            ) AS ulr ON ulr.user_id = ul.user_id
             WHERE DATE(plan.created_at) = '${date}'
             ORDER BY plan.created_at DESC
             LIMIT 1000
@@ -573,9 +651,9 @@ export const internalTransferService = {
           break;
 
         case 'loan_repaid':
-          // 已还款明细（完全参考汇总逻辑的子查询）
+          // 已还款明细（完全参考汇总逻辑的子查询，关联用户登录表获取os_name）
           sql = `
-            SELECT srp.*
+            SELECT srp.*, ulr.os_name
             FROM (
               SELECT
                 order_no,
@@ -587,6 +665,18 @@ export const internalTransferService = {
             INNER JOIN scheduled_repay_plan srp 
               ON srp.order_no = plan.order_no 
               AND srp.created_at = plan.created_at
+            LEFT JOIN user_loans ul ON ul.order_no = srp.order_no
+            LEFT JOIN (
+              SELECT ulr1.user_id, ulr1.os_name
+              FROM user_login_record ulr1
+              INNER JOIN (
+                SELECT user_id, MIN(request_time) AS first_login_time
+                FROM user_login_record
+                WHERE user_id IS NOT NULL
+                GROUP BY user_id
+              ) AS first_login ON first_login.user_id = ulr1.user_id 
+                AND first_login.first_login_time = ulr1.request_time
+            ) AS ulr ON ulr.user_id = ul.user_id
             WHERE DATE(plan.created_at) = '${date}'
             ORDER BY plan.created_at DESC
             LIMIT 1000
